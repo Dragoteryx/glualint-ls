@@ -68,15 +68,15 @@ function parseLinterOutput(output: string): Diagnostic[] {
 		const lineStart = Number(match[2]!) - 1;
 		const colStart = Number(match[3]!) - 1;
     const lineEnd = Number(match[4]!) - 1;
-    let colEnd = Number(match[5]!) - 1;
 		const severity = match[1] == "Warning" ?
 			DiagnosticSeverity.Warning
 			: DiagnosticSeverity.Error;
 
-		const lowerMessage = message.toLowerCase();
-		colEnd = adjustColEnd(lowerMessage, colStart, colEnd);
+		let colEnd = Number(match[5]!) - 1;
+		colEnd = adjustColEnd(message, colStart, colEnd);
 		if (colStart == colEnd) colEnd++;
 
+		const lowerMessage = message.toLowerCase();
 		if (isDeprecation(lowerMessage))
 			tags.push(DiagnosticTag.Deprecated)
 		if (isUnnecessary(lowerMessage))
@@ -117,10 +117,13 @@ function adjustColEnd(message: string, colStart: number, colEnd: number): number
 	const match = /^(?:\w|\s)+ "(.+)"/gm.exec(message);
 	if (match) {
 		return colStart + match[1]!.length;
-	} else if (message.includes("trailing whitespace")) {
-		return colEnd + 1;
 	} else {
-		return colEnd;
+		const lowerMessage = message.toLowerCase();
+		if (lowerMessage.includes("trailing whitespace")) {
+			return colEnd + 1;
+		} else {
+			return colEnd;
+		}
 	}
 }
 

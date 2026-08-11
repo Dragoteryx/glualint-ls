@@ -12,6 +12,7 @@ import { spawn } from "node:child_process";
 
 const connection = createConnection();
 const documents = new TextDocuments(TextDocument);
+let processError = false;
 
 connection.onInitialize(() => ({
   capabilities: {
@@ -22,14 +23,18 @@ connection.onInitialize(() => ({
 
 documents.onDidChangeContent(({ document }) => {
 	const child = spawn("glualint", ["--stdin"]);
+	child.on("error", sendProcessErrorMessage);
 	child.stdin.write(document.getText());
 	child.stdin.end();
 
 	let output = "";
 	child.stdout.on("data", data => output += data.toString());
 	child.stdout.on("end", () => {
-		const diagnostics = parseLinterOutput(output);
-		connection.sendDiagnostics({ uri: document.uri, diagnostics });
+		if (output) {
+			const diagnostics = parseLinterOutput(output);
+			connection.sendDiagnostics({ uri: document.uri, diagnostics });
+			processError = false;
+		}
 	});
 });
 
@@ -39,19 +44,30 @@ connection.onDocumentFormatting(({ textDocument }) => {
 		if (!document) return;
 
 		const child = spawn("glualint", ["--pretty-print"]);
+		child.on("error", sendProcessErrorMessage);
 		child.stdin.write(document.getText());
 		child.stdin.end();
 
 		let output = "";
 		child.stdout.on("data", data => output += data.toString());
 		child.stdout.on("end", () => {
-			resolve([TextEdit.replace({
-				start: { line: 0, character: 0 },
-				end: document.positionAt(document.getText().length),
-			}, output)]);
+			if (output) {
+				processError = false;
+				resolve([TextEdit.replace({
+					start: { line: 0, character: 0 },
+					end: document.positionAt(document.getText().length),
+				}, output)]);
+			}
 		});
 	});
 });
+
+function sendProcessErrorMessage(err: Error) {
+	if (!processError) {
+		connection.window.showErrorMessage(`Failed to run glualint: ${err.message}`);
+		processError = true;
+	}
+}
 
 function parseLinterOutput(output: string): Diagnostic[] {
 	const pattern = /^stdin: \[(Warning|Error)\] line (\d+), column (\d+) - line (\d+), column (\d+): (.*)$/;
@@ -61,7 +77,7 @@ function parseLinterOutput(output: string): Diagnostic[] {
 		const match = pattern.exec(line.trim());
 		if (!match) continue;
 
-		console.log(line);
+		console.log(line.replace("stdin: ", ""));
 
 		const tags: DiagnosticTag[] = [];
 		const message = match[6]!;
@@ -114,7 +130,7 @@ function isUnnecessary(message: string): boolean {
 }
 
 function adjustColEnd(message: string, colStart: number, colEnd: number): number {
-	const match = /^(?:\w|\s)+ "(.+)"/gm.exec(message);
+	const match = /^(?:\w|\s)+ "(.+)"/.exec(message);
 	if (match) {
 		return colStart + match[1]!.length;
 	} else {

@@ -30,11 +30,9 @@ documents.onDidChangeContent(({ document }) => {
 	let output = "";
 	child.stdout.on("data", data => output += data.toString());
 	child.stdout.on("end", () => {
-		if (output) {
-			const diagnostics = parseLinterOutput(output);
-			connection.sendDiagnostics({ uri: document.uri, diagnostics });
-			processError = false;
-		}
+		if (output) processError = false;
+		const diagnostics = parseLinterOutput(output);
+		connection.sendDiagnostics({ uri: document.uri, diagnostics });
 	});
 });
 

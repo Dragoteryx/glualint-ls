@@ -77,7 +77,7 @@ function parseLinterOutput(output: string): Diagnostic[] {
 		const match = pattern.exec(line.trim());
 		if (!match) continue;
 
-		console.log(line.replace("stdin: ", ""));
+		console.log(line);
 
 		const tags: DiagnosticTag[] = [];
 		const message = match[6]!;

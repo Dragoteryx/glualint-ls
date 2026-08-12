@@ -9,6 +9,8 @@ import {
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 
 const connection = createConnection();
 const documents = new TextDocuments(TextDocument);
@@ -22,7 +24,8 @@ connection.onInitialize(() => ({
 }));
 
 documents.onDidChangeContent(({ document }) => {
-	const child = spawn("glualint", ["--stdin"]);
+	const cwd = dirname(fileURLToPath(document.uri));
+	const child = spawn("glualint", ["--stdin"], { cwd });
 	child.on("error", sendProcessErrorMessage);
 	child.stdin.write(document.getText());
 	child.stdin.end();
@@ -41,7 +44,8 @@ connection.onDocumentFormatting(({ textDocument }) => {
 		const document = documents.get(textDocument.uri);
 		if (!document) return;
 
-		const child = spawn("glualint", ["--pretty-print"]);
+		const cwd = dirname(fileURLToPath(document.uri));
+		const child = spawn("glualint", ["--pretty-print"], { cwd });
 		child.on("error", sendProcessErrorMessage);
 		child.stdin.write(document.getText());
 		child.stdin.end();

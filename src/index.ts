@@ -14,7 +14,7 @@ import { dirname } from "node:path";
 
 const connection = createConnection();
 const documents = new TextDocuments(TextDocument);
-let processError = false;
+let errorHappened = false;
 
 connection.onInitialize(() => ({
   capabilities: {
@@ -33,9 +33,12 @@ documents.onDidChangeContent(({ document }) => {
 	let output = "";
 	child.stdout.on("data", data => output += data.toString());
 	child.stdout.on("end", () => {
-		if (output) processError = false;
 		const diagnostics = parseLinterOutput(output);
 		connection.sendDiagnostics({ uri: document.uri, diagnostics });
+	});
+
+	child.on("exit", code => {
+		if (code === 0) errorHappened = false;
 	});
 });
 
@@ -54,20 +57,23 @@ connection.onDocumentFormatting(({ textDocument }) => {
 		child.stdout.on("data", data => output += data.toString());
 		child.stdout.on("end", () => {
 			if (output) {
-				processError = false;
 				resolve([TextEdit.replace({
 					start: { line: 0, character: 0 },
 					end: document.positionAt(document.getText().length),
 				}, output)]);
 			}
+		})
+
+		child.on("exit", code => {
+			if (code === 0) errorHappened = false;
 		});
 	});
 });
 
 function sendProcessErrorMessage(err: Error) {
-	if (!processError) {
+	if (!errorHappened) {
 		connection.window.showErrorMessage(`Failed to run glualint: ${err.message}`);
-		processError = true;
+		errorHappened = true;
 	}
 }
 

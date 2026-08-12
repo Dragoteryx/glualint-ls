@@ -6,6 +6,7 @@ import {
   DiagnosticSeverity,
 	DiagnosticTag,
 	TextEdit,
+	Position,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { spawn } from "node:child_process";
@@ -14,7 +15,7 @@ import { dirname } from "node:path";
 
 const connection = createConnection();
 const documents = new TextDocuments(TextDocument);
-let errorHappened = false;
+let glualintError = false;
 
 connection.onInitialize(() => ({
   capabilities: {
@@ -33,12 +34,12 @@ documents.onDidChangeContent(({ document }) => {
 	let output = "";
 	child.stdout.on("data", data => output += data.toString());
 	child.stdout.on("end", () => {
-		const diagnostics = parseLinterOutput(output);
+		const diagnostics = parseLinterOutput(document, output);
 		connection.sendDiagnostics({ uri: document.uri, diagnostics });
 	});
 
 	child.on("exit", code => {
-		if (code === 0) errorHappened = false;
+		if (code === 0) glualintError = false;
 	});
 });
 
@@ -56,30 +57,30 @@ connection.onDocumentFormatting(({ textDocument }) => {
 		let output = "";
 		child.stdout.on("data", data => output += data.toString());
 		child.stdout.on("end", () => {
-			if (output) {
-				resolve([TextEdit.replace({
-					start: { line: 0, character: 0 },
-					end: document.positionAt(document.getText().length),
-				}, output)]);
-			}
-		})
+			if (!output) return;
+			resolve([TextEdit.replace({
+				start: { line: 0, character: 0 },
+				end: document.positionAt(document.getText().length),
+			}, output)]);
+		});
 
 		child.on("exit", code => {
-			if (code === 0) errorHappened = false;
+			if (code === 0) glualintError = false;
 		});
 	});
 });
 
 function sendProcessErrorMessage(err: Error) {
-	if (!errorHappened) {
+	if (!glualintError) {
 		connection.window.showErrorMessage(`Failed to run glualint: ${err.message}`);
-		errorHappened = true;
+		glualintError = true;
 	}
 }
 
-function parseLinterOutput(output: string): Diagnostic[] {
+function parseLinterOutput(document: TextDocument, output: string): Diagnostic[] {
 	const pattern = /^stdin: \[(Warning|Error)\] line (\d+), column (\d+) - line (\d+), column (\d+): (.*)$/;
 	const diagnostics: Diagnostic[] = [];
+	const text = document.getText();
 
 	for (const line of output.split("\n")) {
 		const match = pattern.exec(line.trim());
@@ -89,38 +90,50 @@ function parseLinterOutput(output: string): Diagnostic[] {
 
 		const tags: DiagnosticTag[] = [];
 		const message = match[6]!;
-		const lineStart = Number(match[2]!) - 1;
-		const colStart = Number(match[3]!) - 1;
-    const lineEnd = Number(match[4]!) - 1;
+		const lowerMessage = message.toLowerCase();
 		const severity = match[1] == "Warning" ?
 			DiagnosticSeverity.Warning
 			: DiagnosticSeverity.Error;
 
-		let colEnd = Number(match[5]!) - 1;
-		colEnd = adjustColEnd(message, colStart, colEnd);
-		if (colStart == colEnd) colEnd++;
+		const lineStart = Number(match[2]!) - 1;
+		const colStart = Number(match[3]!) - 1;
+		const lineEnd = Number(match[4]!) - 1;
+		const colEnd = Number(match[5]!) - 1;
 
-		const lowerMessage = message.toLowerCase();
+		const start: Position = { line: lineStart, character: colStart };
+		const end: Position = { line: lineEnd, character: colEnd };
+
+		const startOffset = document.offsetAt(start);
+		const matchStart = /\s+(\w*)$/.exec(text.substring(0, startOffset));
+		if (matchStart) start.character -= matchStart[1]!.length;
+
+		const endOffset = document.offsetAt(end);
+		const matchEnd = /^(\w*)\s+/.exec(text.substring(endOffset));
+		if (matchEnd) end.character += matchEnd[1]!.length;
+
 		if (isDeprecation(lowerMessage))
 			tags.push(DiagnosticTag.Deprecated)
 		if (isUnnecessary(lowerMessage))
 			tags.push(DiagnosticTag.Unnecessary)
+		if (isTrailingWhitespace(lowerMessage))
+			end.character++;
 
 		if (severity) {
 			diagnostics.push({
 				source: "glualint",
+				range: { start, end },
 				severity,
 				message,
 				tags,
-				range: {
-					start: { line: lineStart, character: colStart },
-					end: { line: lineEnd, character: colEnd },
-				},
 			});
 		}
 	}
 
   return diagnostics;
+}
+
+function isTrailingWhitespace(message: string): boolean {
+	return message.includes("trailing whitespace");
 }
 
 function isDeprecation(message: string): boolean {
@@ -135,20 +148,6 @@ function isUnnecessary(message: string): boolean {
 	if (message.includes("unnecessary")) return true;
 	if (message.includes("double negation")) return true;
 	return false;
-}
-
-function adjustColEnd(message: string, colStart: number, colEnd: number): number {
-	const match = /^(?:\w|\s)+ "(.+)"/.exec(message);
-	if (match) {
-		return colStart + match[1]!.length;
-	} else {
-		const lowerMessage = message.toLowerCase();
-		if (lowerMessage.includes("trailing whitespace")) {
-			return colEnd + 1;
-		} else {
-			return colEnd;
-		}
-	}
 }
 
 documents.listen(connection);

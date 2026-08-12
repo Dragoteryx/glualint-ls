@@ -79,6 +79,7 @@ function sendProcessErrorMessage(err: Error) {
 
 function parseLinterOutput(document: TextDocument, output: string): Diagnostic[] {
 	const pattern = /^stdin: \[(Warning|Error)\] line (\d+), column (\d+) - line (\d+), column (\d+): (.*)$/;
+	const afterIdentPattern = /^(\w+)\s+/;
 	const diagnostics: Diagnostic[] = [];
 	const text = document.getText();
 
@@ -103,13 +104,10 @@ function parseLinterOutput(document: TextDocument, output: string): Diagnostic[]
 		const start: Position = { line: lineStart, character: colStart };
 		const end: Position = { line: lineEnd, character: colEnd };
 
-		const startOffset = document.offsetAt(start);
-		const matchStart = /\s+(\w*)$/.exec(text.substring(0, startOffset));
-		if (matchStart) start.character -= matchStart[1]!.length;
-
 		const endOffset = document.offsetAt(end);
-		const matchEnd = /^(\w*)\s+/.exec(text.substring(endOffset));
-		if (matchEnd) end.character += matchEnd[1]!.length;
+		const endSubstring = text.substring(endOffset);
+		const afterIdentMatch = afterIdentPattern.exec(endSubstring);
+		if (afterIdentMatch) end.character += afterIdentMatch[1]!.length;
 
 		if (isDeprecation(lowerMessage))
 			tags.push(DiagnosticTag.Deprecated)

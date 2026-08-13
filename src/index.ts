@@ -9,9 +9,9 @@ import {
 	Position,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { basename, dirname } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
 
 const connection = createConnection();
 const documents = new TextDocuments(TextDocument);
@@ -87,8 +87,6 @@ function parseLinterOutput(document: TextDocument, output: string): Diagnostic[]
 		const match = pattern.exec(line.trim());
 		if (!match) continue;
 
-		console.log(line);
-
 		const tags: DiagnosticTag[] = [];
 		const message = match[6]!;
 		const lowerMessage = message.toLowerCase();
@@ -127,6 +125,15 @@ function parseLinterOutput(document: TextDocument, output: string): Diagnostic[]
 		}
 	}
 
+	const fileName = basename(fileURLToPath(document.uri));
+	const errors = diagnostics.filter(d => d.severity == DiagnosticSeverity.Error);
+	const warnings = diagnostics.filter(d => d.severity == DiagnosticSeverity.Warning);
+	const errorsLabel = errors.length == 1 ? "error" : "errors";
+	const warningsLabel = warnings.length == 1 ? "warning" : "warnings";
+	console.log(`- ${fileName}: (${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel})`);
+	logDiagnostics(errors);
+	logDiagnostics(warnings);
+
   return diagnostics;
 }
 
@@ -146,6 +153,14 @@ function isUnnecessary(message: string): boolean {
 	if (message.includes("unnecessary")) return true;
 	if (message.includes("double negation")) return true;
 	return false;
+}
+
+function logDiagnostics(diagnostics: Diagnostic[]) {
+	for (const diagnostic of diagnostics) {
+		const { message, range: { start, end } } = diagnostic;
+		const severity = diagnostic.severity == DiagnosticSeverity.Error ? "error" : "warning";
+		console.log(`[${severity}] ${message} (${start.line}:${start.character}, ${end.line}:${end.character})`);
+	}
 }
 
 documents.listen(connection);

@@ -79,34 +79,30 @@ function sendProcessErrorMessage(err: Error) {
 
 function parseLinterOutput(document: TextDocument, output: string): Diagnostic[] {
 	const pattern = /^stdin: \[(Warning|Error)\] line (\d+), column (\d+) - line (\d+), column (\d+): (.*)$/;
-	const afterIdentPattern = /^(\w+)\s+/;
+	const unexpectedPattern = /^unexpected "(.*)"/;
 	const diagnostics: Diagnostic[] = [];
-	const text = document.getText();
 
 	for (const line of output.split("\n")) {
 		const match = pattern.exec(line.trim());
 		if (!match) continue;
 
-		const tags: DiagnosticTag[] = [];
 		const message = match[6]!;
 		const lowerMessage = message.toLowerCase();
-		const severity = match[1] == "Warning" ?
-			DiagnosticSeverity.Warning
-			: DiagnosticSeverity.Error;
-
 		const lineStart = Number(match[2]!) - 1;
 		const colStart = Number(match[3]!) - 1;
 		const lineEnd = Number(match[4]!) - 1;
 		const colEnd = Number(match[5]!) - 1;
+		const severity = match[1] == "Warning" ?
+			DiagnosticSeverity.Warning
+			: DiagnosticSeverity.Error;
 
 		const start: Position = { line: lineStart, character: colStart };
 		const end: Position = { line: lineEnd, character: colEnd };
 
-		const endOffset = document.offsetAt(end);
-		const endSubstring = text.substring(endOffset);
-		const afterIdentMatch = afterIdentPattern.exec(endSubstring);
-		if (afterIdentMatch) end.character += afterIdentMatch[1]!.length;
+		const unexpectedMatch = unexpectedPattern.exec(message);
+		if (unexpectedMatch) end.character += unexpectedMatch[1]!.length;
 
+		const tags: DiagnosticTag[] = [];
 		if (isDeprecation(lowerMessage))
 			tags.push(DiagnosticTag.Deprecated)
 		if (isUnnecessary(lowerMessage))
@@ -130,7 +126,7 @@ function parseLinterOutput(document: TextDocument, output: string): Diagnostic[]
 	const warnings = diagnostics.filter(d => d.severity == DiagnosticSeverity.Warning);
 	const errorsLabel = errors.length == 1 ? "error" : "errors";
 	const warningsLabel = warnings.length == 1 ? "warning" : "warnings";
-	console.log(`- ${fileName}: (${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel})`);
+	connection.console.log(`- ${fileName}: (${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel})`);
 	logDiagnostics(errors);
 	logDiagnostics(warnings);
 
@@ -159,7 +155,7 @@ function logDiagnostics(diagnostics: Diagnostic[]) {
 	for (const diagnostic of diagnostics) {
 		const { message, range: { start, end } } = diagnostic;
 		const severity = diagnostic.severity == DiagnosticSeverity.Error ? "error" : "warning";
-		console.log(`[${severity}] ${message} (${start.line}:${start.character}, ${end.line}:${end.character})`);
+		connection.console.log(`[${severity}] ${message} (${start.line}:${start.character}, ${end.line}:${end.character})`);
 	}
 }
 

@@ -1,10 +1,11 @@
 # glualint-ls
 
-A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) wrapper around the [`glualint`](https://github.com/FPtje/GLuaFixer) CLI, providing diagnostics and document formatting for GLua code.
+A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) wrapper around the [`glualint`](https://github.com/FPtje/GLuaFixer) CLI, providing diagnostics and formatting for GLua code.
 
 ## Requirements
 
-`glualint-ls` does not bundle `glualint` itself — the `glualint` binary must be installed separately and available on your system `PATH`.
+`glualint-ls` requires `glualint` but does not bundle it, either download the latest version [here](https://github.com/FPtje/GLuaFixer/releases) or build it from scratch.
+The language server expects `glualint` to be available in your `PATH`, and won't be able to provide any diagnostics or formatting otherwise.
 
 ## Installation
 

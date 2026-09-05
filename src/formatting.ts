@@ -3,11 +3,15 @@ import { TextEdit } from "vscode-languageserver/node";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
+import { getConfigPath } from "./config.js";
 
 export function formatDocument(document: TextDocument): Promise<TextEdit[] | null> {
 	return new Promise((resolve, reject) => {
+		const options = ["--pretty-print"];
+		const configPath = getConfigPath();
+		if (configPath) options.push("--config", configPath);
 		const cwd = dirname(fileURLToPath(document.uri));
-		const child = spawn("glualint", ["--pretty-print"], { cwd });
+		const child = spawn("glualint", options, { cwd });
 		child.on("error", reject);
 
 		let output = "";

@@ -3,11 +3,15 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { spawn } from "node:child_process";
 import { basename, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getConfigPath } from "./config.js";
 
 export function fetchDiagnostics(document: TextDocument): Promise<Diagnostic[]> {
 	return new Promise((resolve, reject) => {
+		const options = ["--stdin"];
+		const configPath = getConfigPath();
+		if (configPath) options.push("--config", configPath);
 		const cwd = dirname(fileURLToPath(document.uri));
-		const child = spawn("glualint", ["--stdin"], { cwd });
+		const child = spawn("glualint", options, { cwd });
 		child.on("error", reject);
 
 		let output = "";

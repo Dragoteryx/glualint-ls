@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { createConnection, TextDocuments, TextDocumentSyncKind, TextEdit, Position } from "vscode-languageserver/node";
 import { Diagnostic, DiagnosticSeverity, DiagnosticTag } from "vscode-languageserver/node";
 import { LSPErrorCodes, ResponseError } from "vscode-languageserver/node";
@@ -39,7 +41,7 @@ documents.onDidChangeContent(({ document }) => {
 connection.onDocumentFormatting(({ textDocument }) => {
 	return new Promise((resolve, reject) => {
 		const document = documents.get(textDocument.uri);
-		if (!document) return;
+		if (!document) return resolve(null);
 
 		const cwd = dirname(fileURLToPath(document.uri));
 		const child = spawn("glualint", ["--pretty-print"], { cwd });

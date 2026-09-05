@@ -1,6 +1,6 @@
 # glualint-ls
 
-A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) wrapper around the [`glualint`](https://github.com/FPtje/GLuaFixer) CLI, providing diagnostics and document formatting for GLua / Garry's Mod Lua code.
+A [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) wrapper around the [`glualint`](https://github.com/FPtje/GLuaFixer) CLI, providing diagnostics and document formatting for GLua code.
 
 ## Requirements
 
@@ -8,11 +8,19 @@ A [Language Server Protocol](https://microsoft.github.io/language-server-protoco
 
 ## Installation
 
+`glualint-ls` is available on [npm](https://www.npmjs.com/package/glualint-ls) and can be installed globally using the package manager of your choice.
+
+### Using npm
+
 ```sh
 npm install -g glualint-ls
 ```
 
-This package is primarily intended to be installed and run automatically by the [glualint-zed](https://github.com/Dragoteryx/glualint-zed) Zed extension, but it can also be run standalone as a language server by any LSP-compatible editor.
+### Using pnpm
+
+```sh
+pnpm add -g glualint-ls
+```
 
 ## Usage
 
@@ -21,7 +29,3 @@ This package is primarily intended to be installed and run automatically by the 
 ```sh
 glualint-ls --stdio
 ```
-
-## License
-
-MIT — see [LICENSE](./LICENSE).

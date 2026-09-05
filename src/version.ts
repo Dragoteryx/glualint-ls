@@ -15,13 +15,13 @@ function fetchExpectedVersion(options: unknown): string {
 }
 
 export async function validateInstalledVersion() {
-	const installed = await installedVersion();
+	const installed = await fetchInstalledVersion();
 	if (expected != installed) {
 		throw new Error(`glualint version mismatch: expected \`${expected}\`, but found \`${installed}\``);
 	}
 }
 
-function installedVersion(): Promise<string> {
+function fetchInstalledVersion(): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const child = spawn("glualint", ["--version"]);
 		child.on("error", reject);
@@ -30,8 +30,8 @@ function installedVersion(): Promise<string> {
 		child.stdout.on("data", data => output += data.toString());
 		child.stdout.on("end", () => {
 			const version = output.trim();
-			if (!version) reject(new Error("glualint version not found"));
-			else resolve(version);
+			if (version) resolve(version);
+			else reject(new Error("glualint version not found"));
 		});
 	});
 }

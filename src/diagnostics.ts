@@ -110,13 +110,13 @@ function isUnnecessary(message: string): boolean {
 function logFileHeader(fileName: string, errors: Diagnostic[], warnings: Diagnostic[]) {
 	const errorsLabel = errors.length == 1 ? "error" : "errors";
 	const warningsLabel = warnings.length == 1 ? "warning" : "warnings";
-	console.log(`- ${fileName}: (${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel})`);
+	console.log(`[${fileName}] (${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel})`);
 }
 
 function logDiagnostics(diagnostics: Diagnostic[]) {
 	for (const diagnostic of diagnostics) {
 		const { message, range: { start, end } } = diagnostic;
 		const severity = diagnostic.severity == DiagnosticSeverity.Error ? "error" : "warning";
-		console.log(`[${severity}] ${message} (${start.line}:${start.character}, ${end.line}:${end.character})`);
+		console.log(`- <${severity}> ${message} (${start.line}:${start.character}, ${end.line}:${end.character})`);
 	}
 }

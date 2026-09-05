@@ -1,7 +1,7 @@
 {
   "name": "glualint-ls",
-  "version": "0.1.1",
-  "description": "Language server for GLua that wraps the glualint CLI, providing diagnostics and formatting.",
+  "version": "0.1.2",
+  "description": "Language server wrapper for glualint.",
   "keywords": [
     "glua",
     "gmod",

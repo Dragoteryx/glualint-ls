@@ -1,13 +1,5 @@
-import {
-  createConnection,
-  TextDocuments,
-  TextDocumentSyncKind,
-  Diagnostic,
-  DiagnosticSeverity,
-	DiagnosticTag,
-	TextEdit,
-	Position,
-} from "vscode-languageserver/node";
+import { createConnection, TextDocuments, TextDocumentSyncKind, TextEdit, Position } from "vscode-languageserver/node";
+import { Diagnostic, DiagnosticSeverity, DiagnosticTag } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { basename, dirname } from "node:path";
 import { spawn } from "node:child_process";
@@ -99,8 +91,10 @@ function parseLinterOutput(document: TextDocument, output: string): Diagnostic[]
 		const start: Position = { line: lineStart, character: colStart };
 		const end: Position = { line: lineEnd, character: colEnd };
 
-		const unexpectedMatch = unexpectedPattern.exec(message);
-		if (unexpectedMatch) end.character += unexpectedMatch[1]!.length;
+		if (identicalPositions(start, end)) {
+			const unexpectedMatch = unexpectedPattern.exec(message);
+			if (unexpectedMatch) end.character += unexpectedMatch[1]!.length;
+		}
 
 		const tags: DiagnosticTag[] = [];
 		if (isDeprecation(lowerMessage))
@@ -124,13 +118,16 @@ function parseLinterOutput(document: TextDocument, output: string): Diagnostic[]
 	const fileName = basename(fileURLToPath(document.uri));
 	const errors = diagnostics.filter(d => d.severity == DiagnosticSeverity.Error);
 	const warnings = diagnostics.filter(d => d.severity == DiagnosticSeverity.Warning);
-	const errorsLabel = errors.length == 1 ? "error" : "errors";
-	const warningsLabel = warnings.length == 1 ? "warning" : "warnings";
-	connection.console.log(`- ${fileName}: (${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel})`);
+
+	logFileHeader(fileName, errors, warnings);
 	logDiagnostics(errors);
 	logDiagnostics(warnings);
 
   return diagnostics;
+}
+
+function identicalPositions(start: Position, end: Position): boolean {
+	return start.line == end.line && start.character == end.character;
 }
 
 function isTrailingWhitespace(message: string): boolean {
@@ -149,6 +146,12 @@ function isUnnecessary(message: string): boolean {
 	if (message.includes("unnecessary")) return true;
 	if (message.includes("double negation")) return true;
 	return false;
+}
+
+function logFileHeader(fileName: string, errors: Diagnostic[], warnings: Diagnostic[]) {
+	const errorsLabel = errors.length == 1 ? "error" : "errors";
+	const warningsLabel = warnings.length == 1 ? "warning" : "warnings";
+	connection.console.log(`- ${fileName}: (${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel})`);
 }
 
 function logDiagnostics(diagnostics: Diagnostic[]) {

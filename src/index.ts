@@ -27,7 +27,7 @@ documents.onDidChangeContent(async ({ document }) => {
 		glualintOk = true;
 		connection.sendDiagnostics({ uri: document.uri, diagnostics });
 	} catch (err) {
-		handleError("Failed to run glualint", err);
+		handleError(err);
 	}
 });
 
@@ -41,18 +41,20 @@ connection.onDocumentFormatting(async ({ textDocument }) => {
 		glualintOk = true;
 		return edits;
 	} catch (err) {
-		handleError("Failed to format document", err);
-		throw new ResponseError(LSPErrorCodes.RequestFailed, causeMessage(err));
+		handleError(err);
+		const message = errorMessage(err);
+		throw new ResponseError(LSPErrorCodes.RequestFailed, message);
 	}
 });
 
-function causeMessage(cause: unknown) {
-	return cause instanceof Error ? cause.message : String(cause);
+function errorMessage(error: unknown) {
+	return error instanceof Error ? error.message : String(error);
 }
 
-function handleError(message: string, cause: unknown) {
+function handleError(error: unknown) {
 	if (glualintOk) {
-		connection.window.showErrorMessage(`${message}: ${causeMessage(cause)}`);
+		const message = errorMessage(error);
+		connection.window.showErrorMessage(message);
 		glualintOk = false;
 	}
 }

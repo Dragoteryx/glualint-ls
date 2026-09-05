@@ -1,6 +1,6 @@
 {
   "name": "glualint-ls",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Language server wrapper for glualint.",
   "keywords": [
     "glua",

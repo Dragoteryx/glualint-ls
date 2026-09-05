@@ -57,6 +57,7 @@ function handleError(error: unknown) {
 	if (glualintOk) {
 		const message = errorMessage(error);
 		connection.window.showErrorMessage(message);
+		connection.console.error(message);
 		glualintOk = false;
 	}
 }

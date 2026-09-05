@@ -1,21 +1,7 @@
 {
   "name": "glualint-ls",
   "version": "0.1.0",
-  "description": "Language server for GLua/Garry's Mod Lua that wraps the glualint CLI, providing diagnostics and formatting.",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "type": "module",
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "clean": "rimraf dist",
-    "build": "pnpm clean && tsc",
-    "prepublishOnly": "pnpm build"
-  },
-  "bin": {
-    "glualint-ls": "dist/index.js"
-  },
+  "description": "Language server for GLua that wraps the glualint CLI, providing diagnostics and formatting.",
   "keywords": [
     "glua",
     "gmod",
@@ -26,20 +12,34 @@
     "linter",
     "glualint"
   ],
-  "author": "Dragoteryx",
   "license": "MIT",
+  "author": "Dragoteryx",
+  "homepage": "https://github.com/Dragoteryx/glualint-ls#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Dragoteryx/glualint-ls.git"
   },
-  "homepage": "https://github.com/Dragoteryx/glualint-ls#readme",
   "bugs": {
     "url": "https://github.com/Dragoteryx/glualint-ls/issues"
   },
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "glualint-ls": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": ">=18"
   },
   "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "pnpm clean && tsc",
+    "prepublishOnly": "pnpm build"
+  },
   "dependencies": {
     "vscode-languageserver": "^10.1.1",
     "vscode-languageserver-textdocument": "^1.0.14"

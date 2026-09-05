@@ -1,5 +1,6 @@
 import { createConnection, TextDocuments, TextDocumentSyncKind, TextEdit, Position } from "vscode-languageserver/node";
 import { Diagnostic, DiagnosticSeverity, DiagnosticTag } from "vscode-languageserver/node";
+import { LSPErrorCodes, ResponseError } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { basename, dirname } from "node:path";
 import { spawn } from "node:child_process";
@@ -36,20 +37,27 @@ documents.onDidChangeContent(({ document }) => {
 });
 
 connection.onDocumentFormatting(({ textDocument }) => {
-	return new Promise(resolve => {
+	return new Promise((resolve, reject) => {
 		const document = documents.get(textDocument.uri);
 		if (!document) return;
 
 		const cwd = dirname(fileURLToPath(document.uri));
 		const child = spawn("glualint", ["--pretty-print"], { cwd });
-		child.on("error", sendProcessErrorMessage);
+		child.on("error", err => {
+			sendProcessErrorMessage(err);
+			reject(new ResponseError(
+				LSPErrorCodes.RequestFailed,
+				processErrorMessage(err)
+			));
+		});
+
 		child.stdin.write(document.getText());
 		child.stdin.end();
 
 		let output = "";
 		child.stdout.on("data", data => output += data.toString());
 		child.stdout.on("end", () => {
-			if (!output) return;
+			if (!output) return resolve(null);
 			resolve([TextEdit.replace({
 				start: { line: 0, character: 0 },
 				end: document.positionAt(document.getText().length),
@@ -62,9 +70,13 @@ connection.onDocumentFormatting(({ textDocument }) => {
 	});
 });
 
+function processErrorMessage(err: Error) {
+	return `Failed to run glualint: ${err.message}`;
+}
+
 function sendProcessErrorMessage(err: Error) {
 	if (!glualintError) {
-		connection.window.showErrorMessage(`Failed to run glualint: ${err.message}`);
+		connection.window.showErrorMessage(processErrorMessage(err));
 		glualintError = true;
 	}
 }

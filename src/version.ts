@@ -17,7 +17,7 @@ function fetchExpectedVersion(options: unknown): string {
 export async function validateInstalledVersion() {
 	const installed = await installedVersion();
 	if (expected != installed) {
-		throw new Error(`glualint version mismatch: expected ${expected}, but found ${installed}`);
+		throw new Error(`glualint version mismatch: expected \`${expected}\`, but found \`${installed}\``);
 	}
 }
 

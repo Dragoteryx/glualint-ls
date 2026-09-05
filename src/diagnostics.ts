@@ -19,7 +19,7 @@ export function fetchDiagnostics(document: TextDocument): Promise<Diagnostic[]> 
 
 		child.on("exit", code => {
 			if (code === 0 || code === 1) resolve(diagnostics);
-			else reject(new Error(`glualint exited with code ${code}`));
+			else reject(new Error(`glualint exited with code \`${code}\``));
 		});
 	});
 }

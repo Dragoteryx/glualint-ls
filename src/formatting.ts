@@ -17,7 +17,7 @@ export function formatDocument(document: TextDocument): Promise<TextEdit[] | nul
 
 		child.on("exit", code => {
 			if (code !== 0 && code !== 1) {
-				reject(new Error(`glualint exited with code ${code}`));
+				reject(new Error(`glualint exited with code \`${code}\``));
 			} else if (!output || code === 1) {
 				resolve(null);
 			} else {

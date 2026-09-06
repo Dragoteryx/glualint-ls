@@ -63,15 +63,13 @@ function parseLinterOutput(document: TextDocument, output: string): Diagnostic[]
 		if (isTrailingWhitespace(lowerMessage))
 			end.character++;
 
-		if (severity) {
-			diagnostics.push({
-				source: "glualint",
-				range: { start, end },
-				severity,
-				message,
-				tags,
-			});
-		}
+		diagnostics.push({
+			source: "glualint",
+			range: { start, end },
+			severity,
+			message,
+			tags,
+		});
 	}
 
 	const fileName = basename(fileURLToPath(document.uri));
@@ -110,13 +108,13 @@ function isUnnecessary(message: string): boolean {
 function logFileHeader(fileName: string, errors: Diagnostic[], warnings: Diagnostic[]) {
 	const errorsLabel = errors.length == 1 ? "error" : "errors";
 	const warningsLabel = warnings.length == 1 ? "warning" : "warnings";
-	console.log(`[${fileName}] (${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel})`);
+	console.log(`[info] ${fileName}: ${errors.length} ${errorsLabel}, ${warnings.length} ${warningsLabel}`);
 }
 
 function logDiagnostics(diagnostics: Diagnostic[]) {
 	for (const diagnostic of diagnostics) {
 		const { message, range: { start, end } } = diagnostic;
 		const severity = diagnostic.severity == DiagnosticSeverity.Error ? "error" : "warning";
-		console.log(`- <${severity}> ${message} (${start.line}:${start.character}, ${end.line}:${end.character})`);
+		console.log(`| <${severity}> ${message} (${start.line}:${start.character}, ${end.line}:${end.character})`);
 	}
 }

@@ -1,17 +1,47 @@
 import { spawn } from "node:child_process";
+import { Octokit } from "octokit";
 
-const DEFAULT_VERSION = "1.29.0";
+const octokit = new Octokit();
+const defaultVersion = "1.29.0";
+const pattern = /^\d+\.\d+\.\d+$/;
 let expected: string;
 
-export function initExpectedVersion(options: unknown) {
-	expected = fetchExpectedVersion(options);
+export async function initExpectedVersion(options: unknown) {
+	const version = await fetchExpectedVersion(options);
+	if (!pattern.test(version)) {
+		throw new Error(`invalid glualint version \`${version}\`, expected format is \`x.y.z\``);
+	} else {
+		expected = version;
+	}
 }
 
-function fetchExpectedVersion(options: unknown): string {
-	if (typeof options !== "object" || options === null) return DEFAULT_VERSION;
+export function logExpectedVersion() {
+	console.log(`[info] expected glualint version is \`${expected}\``);
+}
+
+async function fetchExpectedVersion(options: unknown): Promise<string> {
+	const version = readExpectedVersion(options);
+	return (version == "latest" ? await fetchLatestVersion() : version)
+		|| defaultVersion;
+}
+
+function readExpectedVersion(options: unknown): string | undefined {
+	if (typeof options !== "object" || options === null) return;
 	const { version } = options as { version: unknown };
-	if (typeof version !== "string") return DEFAULT_VERSION;
+	if (typeof version !== "string") return;
 	return version;
+}
+
+async function fetchLatestVersion(): Promise<string> {
+	try {
+		const params = { owner: "FPtje", repo: "GLuaFixer" };
+		console.log("[info] expected version set to `latest`, fetching from github");
+		const { data } = await octokit.rest.repos.getLatestRelease(params);
+		console.log(`[info] latest glualint version is \`${data.tag_name}\``);
+		return data.tag_name;
+	} catch {
+		throw new Error("failed to fetch latest glualint version from GitHub");
+	}
 }
 
 export async function validateInstalledVersion() {

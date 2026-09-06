@@ -1,6 +1,6 @@
 {
   "name": "glualint-ls",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "description": "Language server wrapper for glualint.",
   "keywords": [
     "glua",
@@ -34,13 +34,14 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "pnpm@11.25.0",
+  "packageManager": "pnpm@12.3.4",
   "scripts": {
     "clean": "rimraf dist",
     "build": "pnpm clean && tsc",
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
+    "octokit": "^5.0.5",
     "vscode-languageserver": "^10.1.1",
     "vscode-languageserver-textdocument": "^1.0.14"
   },

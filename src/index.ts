@@ -2,18 +2,21 @@
 
 import { createConnection, LSPErrorCodes, ResponseError, TextDocuments, TextDocumentSyncKind } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { initExpectedVersion, validateInstalledVersion } from "./version.js";
+import { initExpectedVersion, validateInstalledVersion, logExpectedVersion } from "./version.js";
+import { initConfigPath, logConfigPath } from "./config.js";
 import { fetchDiagnostics } from "./diagnostics.js";
 import { formatDocument } from "./formatting.js";
-import { initConfigPath } from "./config.js";
 
 const connection = createConnection();
 const documents = new TextDocuments(TextDocument);
 let glualintOk = true;
 
-connection.onInitialize(params => {
-	initExpectedVersion(params.initializationOptions);
+connection.onInitialize(async params => {
+	await initExpectedVersion(params.initializationOptions);
 	initConfigPath(params.initializationOptions);
+	logExpectedVersion();
+	logConfigPath();
+
 	return {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
